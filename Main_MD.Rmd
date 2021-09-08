@@ -1,0 +1,18 @@
+---
+title: "Main_RMD"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+```
+
+```{r read-data}
+knoedler <- read.delim("knoedler.txt", sep = ",")
+```
+
+```{r glimpse-data}
+glimpse(knoedler)
+```
+
