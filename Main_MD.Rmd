@@ -9,10 +9,43 @@ library(tidyverse)
 ```
 
 ```{r read-data}
-knoedler <- read.delim("knoedler.txt", sep = ",")
+knoedler <- read_csv("knoedler.csv")
+knoedler <- knoedler %>%
+  filter(object_type == "Painting") %>%
+  mutate(price_amount = as.numeric(price_amount))
 ```
 
 ```{r glimpse-data}
-glimpse(knoedler)
+knoedler %>%
+  count(sell_auth_loc_1) %>%
+  arrange(desc(n))
 ```
+```{r year-hist-plot}
+knoedler %>%
+  ggplot(aes(x = sale_date_year)) +
+  geom_histogram(bins = 100, fill = "lightblue") +
+  labs(title = "Painting Sales vs Year of Sale",
+       subtitle = "Paintings sold by M. Knoedler & Co.",
+       x = "Year of Sale",
+       y = "Number of Paintings Sold") +
+  theme_classic()
+
+knoedler %>%
+  ggplot(aes(x = sale_date_year, y = price_amount)) +
+  geom_point() +
+  geom_smooth()
+```
+
+```{r density-plot-sales-price, warning=FALSE}
+knoedler %>%
+  ggplot(aes(x = price_amount, color = price_amount)) +
+  geom_histogram(bins = 50, fill = "darkgreen") +
+  scale_x_continuous(limits = c(0, 30000)) +
+  labs(title = "Knoedler Painting Sale Prices",
+       x = "Price in USD",
+       y = "# of Sales") +
+  theme_classic()
+  
+```
+
 
