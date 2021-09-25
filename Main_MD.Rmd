@@ -20,7 +20,7 @@ knoedler %>%
   count(sell_auth_loc_1) %>%
   arrange(desc(n))
 ```
-```{r year-hist-plot}
+```{r year-hist-plot, warning=FALSE}
 knoedler %>%
   ggplot(aes(x = sale_date_year)) +
   geom_histogram(bins = 100, fill = "lightblue") +
@@ -33,7 +33,12 @@ knoedler %>%
 knoedler %>%
   ggplot(aes(x = sale_date_year, y = price_amount)) +
   geom_point() +
-  geom_smooth()
+  geom_smooth(color = "green") +
+  theme_minimal() +
+  labs(title = "Scatterplot of Painting Price vs Sale Year",
+       x = "Year of Sale",
+       y = "Price in USD") +
+  scale_y_continuous(breaks = c(100000, 200000, 300000, 400000, 500000), labels = c("$100,000", "$200,000", "$300,000", "$400,000", "$500,000"))
 ```
 
 ```{r density-plot-sales-price, warning=FALSE}
