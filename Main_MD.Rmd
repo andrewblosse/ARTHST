@@ -95,3 +95,23 @@ boxplots <- knoedler %>%
 #yearhistogram
 ```
 
+```{r dimension-wrangling}
+# dims <- knoedler %>%
+#   filter(!is.na(dimensions)) %>%
+#   mutate(dimensions = gsub("\\[|\\]", "", dimensions)) 
+
+#step1 - remove everything that isn't a number, a slash, or an x|X
+knoedler_dimensions <- knoedler %>%
+  mutate(dims_cleaned = str_replace_all(dimensions, "\\[|\\]", "")) %>%
+  filter(!is.na(dimensions)) %>%
+  mutate(dim1 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,1],
+         dim2 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,2]) %>%
+  mutate(dim1 = str_replace_all(dim1, "\\d/\\d", ""),
+         dim2 = str_replace_all(dim2, "\\d/\\d", "")) %>%
+  mutate(dim1 = str_replace_all(dim1, "[:alpha:]|[:punct:]", ""),
+         dim2 = str_replace_all(dim2, "[:alpha:]|[:punct:]", "")) %>%
+  mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
+         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d")))
+```
+
+

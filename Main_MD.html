@@ -268,6 +268,22 @@ boxplots &lt;- knoedler %&gt;%
 #top20dims
 #year_price_scatter
 #yearhistogram</code></pre>
+<pre class="r"><code># dims &lt;- knoedler %&gt;%
+#   filter(!is.na(dimensions)) %&gt;%
+#   mutate(dimensions = gsub(&quot;\\[|\\]&quot;, &quot;&quot;, dimensions)) 
+
+#step1 - remove everything that isn&#39;t a number, a slash, or an x|X
+knoedler_dimensions &lt;- knoedler %&gt;%
+  mutate(dims_cleaned = str_replace_all(dimensions, &quot;\\[|\\]&quot;, &quot;&quot;)) %&gt;%
+  filter(!is.na(dimensions)) %&gt;%
+  mutate(dim1 = str_split(dims_cleaned, &quot;x|X&quot;, simplify = TRUE)[,1],
+         dim2 = str_split(dims_cleaned, &quot;x|X&quot;, simplify = TRUE)[,2]) %&gt;%
+  mutate(dim1 = str_replace_all(dim1, &quot;\\d/\\d&quot;, &quot;&quot;),
+         dim2 = str_replace_all(dim2, &quot;\\d/\\d&quot;, &quot;&quot;)) %&gt;%
+  mutate(dim1 = str_replace_all(dim1, &quot;[:alpha:]|[:punct:]&quot;, &quot;&quot;),
+         dim2 = str_replace_all(dim2, &quot;[:alpha:]|[:punct:]&quot;, &quot;&quot;)) %&gt;%
+  mutate(dim1 = as.numeric(str_extract(dim1, &quot;\\d\\d\\d|\\d\\d|\\d&quot;)),
+         dim2 = as.numeric(str_extract(dim2, &quot;\\d\\d\\d|\\d\\d|\\d&quot;)))</code></pre>
 
 
 
