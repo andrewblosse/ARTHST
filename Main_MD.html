@@ -283,7 +283,8 @@ knoedler_dimensions &lt;- knoedler %&gt;%
   mutate(dim1 = str_replace_all(dim1, &quot;[:alpha:]|[:punct:]&quot;, &quot;&quot;),
          dim2 = str_replace_all(dim2, &quot;[:alpha:]|[:punct:]&quot;, &quot;&quot;)) %&gt;%
   mutate(dim1 = as.numeric(str_extract(dim1, &quot;\\d\\d\\d|\\d\\d|\\d&quot;)),
-         dim2 = as.numeric(str_extract(dim2, &quot;\\d\\d\\d|\\d\\d|\\d&quot;)))</code></pre>
+         dim2 = as.numeric(str_extract(dim2, &quot;\\d\\d\\d|\\d\\d|\\d&quot;))) %&gt;%
+  mutate(inches_squared = dim1 * dim2)</code></pre>
 
 
 

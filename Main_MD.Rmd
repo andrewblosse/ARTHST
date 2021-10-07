@@ -111,7 +111,8 @@ knoedler_dimensions <- knoedler %>%
   mutate(dim1 = str_replace_all(dim1, "[:alpha:]|[:punct:]", ""),
          dim2 = str_replace_all(dim2, "[:alpha:]|[:punct:]", "")) %>%
   mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
-         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d")))
+         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
+  mutate(inches_squared = dim1 * dim2)
 ```
 
 
