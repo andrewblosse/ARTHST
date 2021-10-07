@@ -86,3 +86,12 @@ boxplots <- knoedler %>%
        y = "Painting Dimensions in Inches")
 ```
 
+```{r display, warning=FALSE}
+#boxplots
+#common_painting_dimensions
+#price_histogram
+#top20dims
+#year_price_scatter
+#yearhistogram
+```
+
