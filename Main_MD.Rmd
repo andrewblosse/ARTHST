@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(colorspace)
 ```
 
 ```{r read-data, include = FALSE}
@@ -113,6 +114,58 @@ knoedler_dimensions <- knoedler %>%
   mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
          dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
   mutate(inches_squared = dim1 * dim2)
+
+
 ```
 
+```{r plots2, warning=FALSE}
+dims_scatterplot <- knoedler_dimensions %>%
+ggplot() +
+  theme_classic() +
+  geom_point(aes(x = dim1, y = dim2, size = price_amount, color = price_amount), alpha = .5) +
+  scale_color_viridis_c(direction = -1, labels = c("$50,000","$100,000","$200,000","$400,000","$600,000"), breaks = c(50000, 100000, 200000, 400000, 600000), begin = 0, end = 1) +
+  scale_size_continuous(labels = c("$50,000", "$100,000","$200,000","$400,000","$600,000"), breaks = c(50000 ,100000, 200000, 400000, 600000)) +
+  geom_abline(slope = 1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
+  geom_abline(slope = 1/1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
+  coord_cartesian(xlim = c(0, 175),
+                  ylim = c(0, 175)) +
+  guides(color = guide_legend(), size = guide_legend()) +
+  labs(title = "Painting Dimensions and Sale Price",
+       x = "Length in Inches",
+       y = "Width in Inches",
+       color = "Price in Dollars",
+       size = "Price in Dollars",
+       caption = "The Golden Ratio is denoted by the dotted lines")
+
+subject_size_boxplots <- knoedler_dimensions %>%
+  filter(!is.na(subject)) %>%
+ggplot() +
+  geom_boxplot(aes(x = inches_squared, y = fct_reorder(subject, inches_squared, .fun = median), color = subject)) +
+  scale_x_log10() +
+  theme_classic() +
+  labs(title = "Size of Paintings by Subject",
+       caption = "Painting Sizes & Subjects from M. Knoedler & Co. Stock Books",
+       x = "Size in Inches Squared",
+       y = "Subject") +
+  scale_color_discrete_qualitative() +
+  theme(legend.position = "none")
+
+subject_price_boxplots<- knoedler %>%
+  filter(!is.na(subject), !is.na(price_amount)) %>%
+  group_by(subject) %>%
+  summarise(mean_price = mean(price_amount)) %>%
+  ggplot(aes(y = fct_reorder(subject, mean_price), x = mean_price, fill = subject)) +
+  theme_classic() +
+  geom_col() +
+  scale_x_sqrt() +
+  scale_fill_discrete_qualitative() +
+  theme(legend.position = "none") +
+  labs(title = "Mean Painting Sales Price by Subject", 
+       x = "Mean Painting Price in USD",
+       y = "Subject")
+
+dims_scatterplot
+subject_size_boxplots
+subject_price_boxplots
+```
 
