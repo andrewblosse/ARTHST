@@ -8,6 +8,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(colorspace)
 library(priceR)
+library(scales)
 ```
 
 ```{r read-data, include = FALSE}
@@ -89,12 +90,11 @@ boxplots <- knoedler %>%
 ```
 
 ```{r display, warning=FALSE}
-#boxplots
-#common_painting_dimensions
-#price_histogram
-#top20dims
-#year_price_scatter
-#yearhistogram
+boxplots
+common_painting_dimensions
+price_histogram
+year_price_scatter
+yearhistogram
 ```
 
 ```{r dimension-wrangling}
@@ -170,7 +170,6 @@ subject_size_boxplots
 subject_price_boxplots
 ```
 
-#linear regressions
 
 ```{r moreplots}
 #golden ratio closeness vs sale price
@@ -184,8 +183,15 @@ golden_ratio_plot <- knoedler_dimensions %>%
   select(price_amount, difference) %>%
   filter(!is.na(price_amount)) %>%
   ggplot(aes(x = difference, y = price_amount)) +
+  theme_classic() +
   geom_point(aes(color = difference)) +
-  scale_color_continuous_sequential(palette = "ag_GrnYl")
+  scale_color_continuous_sequential(palette = "ag_GrnYl") +
+  scale_y_continuous(label = comma) +
+  labs(title = "Golden Ratio Similarity versus Price",
+       x = "Closeness to the Golden Ratio",
+       y = "Price in USD",
+       caption = "Smaller values are more golden") +
+  theme(legend.position = "none")
 
 # ggplot() +
 #   geom_point(aes(x = mincloseness, y = price_amount))
@@ -196,13 +202,25 @@ frequency_subject_plot <- knoedler_dimensions %>%
   ggplot(aes(x = n, y = fct_reorder(subject, n), fill = n)) +
   geom_col() +
   scale_fill_continuous_qualitative() +
+  theme_classic() +
   theme(legend.position = "none") +
   labs(x = "Frequency",
        y = "Subject",
        title = "Frequency of Knoedler Subjects",
        caption = "Data from M. Knoedler & Co Stockbooks") +
   geom_text(aes(x = n + 17, y = fct_reorder(subject, n), label = as.character(n)))
+golden_ratio_plot
+frequency_subject_plot
 ```
 
+```{r savingfunctions}
+png(filename = "plots/goldenpriceplot.png")
+golden_ratio_plot
+dev.off()
+
+png(filename = "plots/frequencysubjectplot.png")
+frequency_subject_plot
+dev.off()
+```
 
 
