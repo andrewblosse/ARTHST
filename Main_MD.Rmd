@@ -7,6 +7,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(colorspace)
+library(priceR)
 ```
 
 ```{r read-data, include = FALSE}
@@ -168,4 +169,40 @@ dims_scatterplot
 subject_size_boxplots
 subject_price_boxplots
 ```
+
+#linear regressions
+
+```{r moreplots}
+#golden ratio closeness vs sale price
+#raw size vs price
+
+golden_ratio_plot <- knoedler_dimensions %>%
+  mutate(ratio1 = dim1/dim2,
+         ratio2 = dim2/dim1,
+         bigratio = if_else(ratio1 >= ratio2, ratio1, ratio2),
+         difference = abs(1.618 - bigratio)) %>%
+  select(price_amount, difference) %>%
+  filter(!is.na(price_amount)) %>%
+  ggplot(aes(x = difference, y = price_amount)) +
+  geom_point(aes(color = difference)) +
+  scale_color_continuous_sequential(palette = "ag_GrnYl")
+
+# ggplot() +
+#   geom_point(aes(x = mincloseness, y = price_amount))
+
+frequency_subject_plot <- knoedler_dimensions %>%
+  filter(!is.na(subject)) %>%
+  count(subject) %>%
+  ggplot(aes(x = n, y = fct_reorder(subject, n), fill = n)) +
+  geom_col() +
+  scale_fill_continuous_qualitative() +
+  theme(legend.position = "none") +
+  labs(x = "Frequency",
+       y = "Subject",
+       title = "Frequency of Knoedler Subjects",
+       caption = "Data from M. Knoedler & Co Stockbooks") +
+  geom_text(aes(x = n + 17, y = fct_reorder(subject, n), label = as.character(n)))
+```
+
+
 
