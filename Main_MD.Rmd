@@ -92,6 +92,8 @@ knoedler_dimensions <- knoedler_adjusted %>%
   mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
          dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
   mutate(inches_squared = dim1 * dim2)
+knoedler_dimensions <- knoedler_dimensions %>%
+  mutate(price_per_sqin = price_amount/inches_squared)
 ```
 
 ```{r plots2, warning=FALSE}
@@ -187,6 +189,48 @@ frequency_subject_plot <- knoedler_dimensions %>%
 golden_ratio_plot
 frequency_subject_plot
 ```
+
+```{r price-square-inches}
+price_square_inches<- ggplot(data = knoedler_dimensions,
+       aes(y = price_amount,
+           x = inches_squared)) +
+  geom_point() +
+  theme_classic() +
+  labs(title = "Square Inches vs Price",
+       x = "Square Inches",
+       y = "Price in USD")
+price_square_inches
+
+price_per_yearmeans <- knoedler_dimensions %>%
+  filter(!is.na(sale_date_year), !is.na(price_per_sqin)) %>%
+  group_by(sale_date_year) %>%
+  summarise(avg_price_per_sqin = mean(price_per_sqin))
+
+price_per_sq <- ggplot(data = price_per_yearmeans,
+                       aes(y = avg_price_per_sqin, x = sale_date_year)) +
+  geom_line() +
+  theme_classic() +
+  labs(title = "Price per Square Inch by Year",
+       subtitle = "Yearly means",
+       x = "Year of Sale",
+       y = "Price per sq in")
+price_per_sq
+
+sqin_density <- ggplot(data = knoedler_dimensions) +
+  geom_density(aes(x = price_per_sqin), fill = "darkgreen") +
+  scale_x_log10() +
+  theme_classic() +
+  labs(title = "Density Plot of Price per Sqin")
+sqin_density
+```
+
+
+```{r linear-modeling}
+#g_fit <- glm(price_per_sqin ~ nationality_1 + sale_date_year + subject + genre,
+#             data = knoedler_dimensions,
+#             family = "Gamma")
+```
+
 
 ```{r savingfunctions}
 png(filename = "plots/.png")
