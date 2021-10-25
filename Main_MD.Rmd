@@ -38,6 +38,15 @@ average_price_by_year <- ggplot(data = years_and_average_prices) +
        x = "Year",
        y = "Price")
 average_price_by_year
+
+year_density <- ggplot(data = knoedler, aes(x = sale_date_year)) +
+  scale_x_continuous(limits = c(1900, 1980)) +
+  geom_density(fill = "gray") +
+  theme_classic() +
+  labs(title = "Sale Years of Paintings",
+       subtitle = "Density plot of years of sale", x = "Year of Sale",
+       y = "")
+year_density
 ```
 
 ```{r price-histograms, warning=FALSE}
@@ -117,14 +126,14 @@ ggplot() +
   scale_color_discrete_qualitative() +
   theme(legend.position = "none")
 
-subject_price_boxplots<- knoedler_adjusted %>%
+subject_price_bars<- knoedler_adjusted %>%
   filter(!is.na(subject), !is.na(price_amount)) %>%
   group_by(subject) %>%
   summarise(mean_price = mean(price_amount)) %>%
   ggplot(aes(y = fct_reorder(subject, mean_price), x = mean_price, fill = subject)) +
   theme_classic() +
   geom_col() +
-  scale_x_sqrt() +
+  scale_x_sqrt(label = comma) +
   scale_fill_discrete_qualitative() +
   theme(legend.position = "none") +
   labs(title = "Mean Painting Sales Price by Subject", 
@@ -133,7 +142,7 @@ subject_price_boxplots<- knoedler_adjusted %>%
 
 dims_scatterplot
 subject_size_boxplots
-subject_price_boxplots
+subject_price_bars
 ```
 
 
@@ -180,12 +189,19 @@ frequency_subject_plot
 ```
 
 ```{r savingfunctions}
-png(filename = "plots/goldenpriceplot.png")
-golden_ratio_plot
+png(filename = "plots/.png")
 dev.off()
 
-png(filename = "plots/frequencysubjectplot.png")
-frequency_subject_plot
-dev.off()
+#png(filename = "plots/.png")
+#dev.off()
+
+#png(filename = "plots/.png")
+#dev.off()
+
+#png(filename = "plots/.png")
+#dev.off()
+
+#png(filename = "plots/.png")
+#dev.off()
 ```
 
