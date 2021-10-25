@@ -16,6 +16,7 @@ knoedler <- read_csv("knoedler.csv")
 knoedler <- knoedler %>%
   filter(object_type == "Painting") %>%
   mutate(price_amount = as.numeric(price_amount))
+#look here to see if creating NA's
 ```
 
 ```{r glimpse-data}
@@ -23,16 +24,8 @@ knoedler %>%
   count(sell_auth_loc_1) %>%
   arrange(desc(n))
 ```
-```{r year-hist-plot, warning=FALSE}
- yearhistogram <- knoedler %>%
-  ggplot(aes(x = sale_date_year)) +
-  geom_histogram(bins = 100, fill = "lightblue") +
-  labs(title = "Painting Sales vs Year of Sale",
-       subtitle = "Paintings sold by M. Knoedler & Co.",
-       x = "Year of Sale",
-       y = "Number of Paintings Sold") +
-  theme_classic()
 
+```{r year-hist-plot, warning=FALSE}
 year_price_scatter <- knoedler %>%
   ggplot(aes(x = sale_date_year, y = price_amount)) +
   geom_point() +
@@ -56,45 +49,9 @@ year_price_scatter <- knoedler %>%
   
 ```
 
-```{r dimensions}
-common_painting_dimensions <- knoedler %>%
-  filter(!is.na(dimensions))%>%
-  count(dimensions) %>%
-  arrange(desc(n)) %>%
-  head(20) %>%
-  ggplot(aes(y = dimensions, x = n)) +
-  geom_col() +
-  labs(title = "Most Common Painting Dimensions",
-       subtitle = "Paintings from M. Knoedler & Co. Stock Books",
-       y = "Painting Dimension",
-       x = "Frequency") +
-  theme_minimal()
-```
-
-```{r avg-price-per-dim, warning=FALSE}
-top20dims <- knoedler %>%
-  filter(!is.na(dimensions)) %>%
-  count(dimensions) %>%
-  arrange(desc(n)) %>%
-  head(20)
-
-boxplots <- knoedler %>%
-  filter(dimensions %in% top20dims$dimensions) %>%
-  select(dimensions, price_amount, price_currency) %>%
-  ggplot(aes(y = dimensions, x = price_amount)) +
-  geom_boxplot() +
-  coord_cartesian(xlim = c(0, 25000)) +
-  labs(title = "Boxplots of Sale Prices by Dimension",
-       x = "Price in USD",
-       y = "Painting Dimensions in Inches")
-```
-
 ```{r display, warning=FALSE}
-boxplots
-common_painting_dimensions
 price_histogram
 year_price_scatter
-yearhistogram
 ```
 
 ```{r dimension-wrangling}
@@ -222,5 +179,4 @@ png(filename = "plots/frequencysubjectplot.png")
 frequency_subject_plot
 dev.off()
 ```
-
 
