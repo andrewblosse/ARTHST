@@ -226,9 +226,9 @@ sqin_density
 
 
 ```{r linear-modeling}
-#g_fit <- glm(price_per_sqin ~ nationality_1 + sale_date_year + subject + genre,
-#             data = knoedler_dimensions,
-#             family = "Gamma")
+basic_lm <- lm(price_amount ~ nationality_1 + sale_date_year + subject + genre + inches_squared,
+             data = knoedler_dimensions)
+summary(basic_lm)
 ```
 
 
