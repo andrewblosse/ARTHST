@@ -15,18 +15,54 @@ library(scales)
 knoedler <- read_csv("knoedler.csv") %>%
   filter(object_type == "Painting") %>%
   mutate(price_amount = as.numeric(price_amount))
-#look here to see if creating NA's
 ```
 
 ```{r inflation-work}
-knoedler_adjusted <- knoedler %>%
+knoedler_usd <- knoedler %>%
   filter(price_currency == "dollars") %>%
   mutate(price_amount = adjust_for_inflation(price_amount, sale_date_year, to_date = 2020, country = "US"))
+
+knoedler_pounds <- knoedler %>%
+  filter(price_currency == "pounds") %>%
+  mutate(price_amount = adjust_for_inflation(price_amount, sale_date_year, to_date = 2020, country = "GB"))
+```
+
+```{r dimension-wrangling}
+#step1 - remove everything that isn't a number, a slash, or an x|X
+knoedler_dimensions_usd <- knoedler_usd %>%
+  mutate(dims_cleaned = str_replace_all(dimensions, "\\[|\\]", "")) %>%
+  filter(!is.na(dimensions)) %>%
+  mutate(dim1 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,1],
+         dim2 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,2]) %>%
+  mutate(dim1 = str_replace_all(dim1, "\\d/\\d", ""),
+         dim2 = str_replace_all(dim2, "\\d/\\d", "")) %>%
+  mutate(dim1 = str_replace_all(dim1, "[:alpha:]|[:punct:]", ""),
+         dim2 = str_replace_all(dim2, "[:alpha:]|[:punct:]", "")) %>%
+  mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
+         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
+  mutate(inches_squared = dim1 * dim2)
+knoedler_dimensions_usd <- knoedler_dimensions_usd %>%
+  mutate(price_per_sqin = price_amount/inches_squared)
+
+knoedler_dimensions_pounds <- knoedler_pounds %>%
+  mutate(dims_cleaned = str_replace_all(dimensions, "\\[|\\]", "")) %>%
+  filter(!is.na(dimensions)) %>%
+  mutate(dim1 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,1],
+         dim2 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,2]) %>%
+  mutate(dim1 = str_replace_all(dim1, "\\d/\\d", ""),
+         dim2 = str_replace_all(dim2, "\\d/\\d", "")) %>%
+  mutate(dim1 = str_replace_all(dim1, "[:alpha:]|[:punct:]", ""),
+         dim2 = str_replace_all(dim2, "[:alpha:]|[:punct:]", "")) %>%
+  mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
+         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
+  mutate(inches_squared = dim1 * dim2)
+knoedler_dimensions_pounds <- knoedler_dimensions_pounds %>%
+  mutate(price_per_sqin = price_amount/inches_squared)
 ```
 
 
 ```{r yearplots, warning=FALSE}
-years_and_average_prices <- knoedler_adjusted %>%
+years_and_average_prices <- knoedler_usd %>%
   filter(!is.na(sale_date_year), !is.na(price_amount)) %>%
   group_by(sale_date_year) %>%
   summarise(average_price = mean(price_amount))
@@ -50,7 +86,7 @@ year_density
 ```
 
 ```{r price-histograms, warning=FALSE}
- price_histogram_logged <- knoedler_adjusted %>%
+ price_histogram_logged <- knoedler_usd %>%
   ggplot(aes(x = price_amount, color = price_amount)) +
   geom_histogram(bins = 50, fill = "darkgreen") +
   scale_x_log10(label = comma) +
@@ -59,7 +95,7 @@ year_density
        y = "# of Sales") +
   theme_classic()
 
- price_histogram_nonlogged <- knoedler_adjusted %>%
+ price_histogram_nonlogged <- knoedler_usd %>%
   ggplot(aes(x = price_amount, color = price_amount)) +
   geom_histogram(bins = 50, fill = "darkgreen") +
   scale_x_continuous(limits = c(0, 250000),label = comma) +
@@ -74,30 +110,10 @@ price_histogram_nonlogged
 
 
 
-```{r dimension-wrangling}
-# dims <- knoedler %>%
-#   filter(!is.na(dimensions)) %>%
-#   mutate(dimensions = gsub("\\[|\\]", "", dimensions)) 
 
-#step1 - remove everything that isn't a number, a slash, or an x|X
-knoedler_dimensions <- knoedler_adjusted %>%
-  mutate(dims_cleaned = str_replace_all(dimensions, "\\[|\\]", "")) %>%
-  filter(!is.na(dimensions)) %>%
-  mutate(dim1 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,1],
-         dim2 = str_split(dims_cleaned, "x|X", simplify = TRUE)[,2]) %>%
-  mutate(dim1 = str_replace_all(dim1, "\\d/\\d", ""),
-         dim2 = str_replace_all(dim2, "\\d/\\d", "")) %>%
-  mutate(dim1 = str_replace_all(dim1, "[:alpha:]|[:punct:]", ""),
-         dim2 = str_replace_all(dim2, "[:alpha:]|[:punct:]", "")) %>%
-  mutate(dim1 = as.numeric(str_extract(dim1, "\\d\\d\\d|\\d\\d|\\d")),
-         dim2 = as.numeric(str_extract(dim2, "\\d\\d\\d|\\d\\d|\\d"))) %>%
-  mutate(inches_squared = dim1 * dim2)
-knoedler_dimensions <- knoedler_dimensions %>%
-  mutate(price_per_sqin = price_amount/inches_squared)
-```
 
 ```{r plots2, warning=FALSE}
-dims_scatterplot <- knoedler_dimensions %>%
+dims_scatterplot <- knoedler_dimensions_usd %>%
 ggplot() +
   theme_classic() +
   geom_point(aes(x = dim1, y = dim2, size = price_amount, color = price_amount), alpha = .5) +
@@ -115,7 +131,7 @@ ggplot() +
        size = "Price in Dollars",
        caption = "The Golden Ratio is denoted by the dotted lines")
 
-subject_size_boxplots <- knoedler_dimensions %>%
+subject_size_boxplots <- knoedler_dimensions_usd %>%
   filter(!is.na(subject)) %>%
 ggplot() +
   geom_boxplot(aes(x = inches_squared, y = fct_reorder(subject, inches_squared, .fun = median), color = subject)) +
@@ -128,7 +144,7 @@ ggplot() +
   scale_color_discrete_qualitative() +
   theme(legend.position = "none")
 
-subject_price_bars<- knoedler_adjusted %>%
+subject_price_bars<- knoedler_usd %>%
   filter(!is.na(subject), !is.na(price_amount)) %>%
   group_by(subject) %>%
   summarise(mean_price = mean(price_amount)) %>%
@@ -152,7 +168,7 @@ subject_price_bars
 #golden ratio closeness vs sale price
 #raw size vs price
 
-golden_ratio_plot <- knoedler_dimensions %>%
+golden_ratio_plot <- knoedler_dimensions_usd %>%
   mutate(ratio1 = dim1/dim2,
          ratio2 = dim2/dim1,
          bigratio = if_else(ratio1 >= ratio2, ratio1, ratio2),
@@ -170,10 +186,8 @@ golden_ratio_plot <- knoedler_dimensions %>%
        caption = "Smaller values are more golden") +
   theme(legend.position = "none")
 
-# ggplot() +
-#   geom_point(aes(x = mincloseness, y = price_amount))
 
-frequency_subject_plot <- knoedler_dimensions %>%
+frequency_subject_plot <- knoedler_dimensions_usd %>%
   filter(!is.na(subject)) %>%
   count(subject) %>%
   ggplot(aes(x = n, y = fct_reorder(subject, n), fill = n)) +
@@ -191,7 +205,7 @@ frequency_subject_plot
 ```
 
 ```{r price-square-inches}
-price_square_inches<- ggplot(data = knoedler_dimensions,
+price_square_inches<- ggplot(data = knoedler_dimensions_usd,
        aes(y = price_amount,
            x = inches_squared)) +
   geom_point() +
@@ -201,7 +215,7 @@ price_square_inches<- ggplot(data = knoedler_dimensions,
        y = "Price in USD")
 price_square_inches
 
-price_per_yearmeans <- knoedler_dimensions %>%
+price_per_yearmeans <- knoedler_dimensions_usd %>%
   filter(!is.na(sale_date_year), !is.na(price_per_sqin)) %>%
   group_by(sale_date_year) %>%
   summarise(avg_price_per_sqin = mean(price_per_sqin))
@@ -216,9 +230,8 @@ price_per_sq <- ggplot(data = price_per_yearmeans,
        y = "Price per sq in")
 price_per_sq
 
-sqin_density <- ggplot(data = knoedler_dimensions) +
+sqin_density <- ggplot(data = knoedler_dimensions_usd) +
   geom_density(aes(x = price_per_sqin), fill = "darkgreen") +
-  scale_x_log10() +
   theme_classic() +
   labs(title = "Density Plot of Price per Sqin")
 sqin_density
@@ -227,25 +240,54 @@ sqin_density
 
 ```{r linear-modeling}
 basic_lm <- lm(price_amount ~ nationality_1 + sale_date_year + subject + genre + inches_squared,
-             data = knoedler_dimensions)
+             data = knoedler_dimensions_usd)
 summary(basic_lm)
 ```
 
 
-```{r savingfunctions}
-png(filename = "plots/.png")
+```{r savingfunctions, eval=FALSE}
+png(filename = "plots/years_and_average_prices.png")
+years_and_average_prices
 dev.off()
 
-#png(filename = "plots/.png")
-#dev.off()
+png(filename = "plots/year_density.png")
+year_density
+dev.off()
 
-#png(filename = "plots/.png")
-#dev.off()
+png(filename = "plots/subject_size_boxplots.png")
+subject_size_boxplots
+dev.off()
 
-#png(filename = "plots/.png")
-#dev.off()
+png(filename = "plots/subject_price_bars.png")
+subject_price_bars
+dev.off()
 
-#png(filename = "plots/.png")
-#dev.off()
+png(filename = "plots/sqin_density.png")
+sqin_density
+dev.off()
+
+png(filename = "plots/price_square_inches.png")
+price_square_inches
+dev.off()
+
+png(filename = "plots/price_per_sq.png")
+price_per_sq
+dev.off()
+
+png(filename = "plots/price_histogram_logged.png")
+price_histogram_logged
+dev.off()
+
+png(filename = "plots/price_histogram_nonlogged.png")
+price_histogram_nonlogged
+dev.off()
+
+
 ```
+
+```{r}
+knoedler %>%
+  count(price_currency)
+```
+
 
