@@ -11,6 +11,8 @@ library(priceR)
 library(scales)
 ```
 
+## Data Wrangling
+
 ```{r read-data, include = FALSE}
 knoedler <- read_csv("knoedler.csv") %>%
   filter(object_type == "Painting") %>%
@@ -58,35 +60,65 @@ knoedler_dimensions_pounds <- knoedler_pounds %>%
   mutate(inches_squared = dim1 * dim2)
 knoedler_dimensions_pounds <- knoedler_dimensions_pounds %>%
   mutate(price_per_sqin = price_amount/inches_squared)
+
+knoedler_dimensions_combined <- full_join(knoedler_dimensions_usd, knoedler_dimensions_pounds, by = c("dim1", "dim2", "inches_squared", "sale_date_year", "subject"))
+View(knoedler_dimensions_combined)
+```
+
+## Plots
+
+```{r theme}
+theme(text = element_text(family = "serif"))
 ```
 
 
 ```{r yearplots, warning=FALSE}
-years_and_average_prices <- knoedler_usd %>%
+years_average_prices_usd <- knoedler_usd %>%
   filter(!is.na(sale_date_year), !is.na(price_amount)) %>%
   group_by(sale_date_year) %>%
   summarise(average_price = mean(price_amount))
 
-average_price_by_year <- ggplot(data = years_and_average_prices) +
+years_average_prices_pounds <- knoedler_pounds %>%
+  filter(!is.na(sale_date_year), !is.na(price_amount)) %>%
+  group_by(sale_date_year) %>%
+  summarise(average_price = mean(price_amount))
+
+average_price_by_year_usd <- ggplot(data = years_average_prices_usd) +
   geom_line(aes(x = sale_date_year, y = average_price)) +
   theme_classic() +
   labs(title = "Average Price of Paintings Sold by Year",
        x = "Year",
-       y = "Price")
-average_price_by_year
+       y = "Price in USD")
+average_price_by_year_usd
 
-year_density <- ggplot(data = knoedler, aes(x = sale_date_year)) +
+average_price_by_year_pounds <- ggplot(data = years_average_prices_pounds) +
+  geom_line(aes(x = sale_date_year, y = average_price)) +
+  theme_classic() +
+  labs(title = "Average Price of Paintings Sold by Year",
+       x = "Year",
+       y = "Price in GBP")
+average_price_by_year_pounds
+
+year_density_usd <- ggplot(data = knoedler_usd, aes(x = sale_date_year)) +
   scale_x_continuous(limits = c(1900, 1980)) +
   geom_density(fill = "gray") +
   theme_classic() +
-  labs(title = "Sale Years of Paintings",
+  labs(title = "Sale Years of Paintings sold in USD",
        subtitle = "Density plot of years of sale", x = "Year of Sale",
        y = "")
-year_density
+year_density_usd
+
+year_density_pounds <- ggplot(data = knoedler_pounds, aes(x = sale_date_year)) +
+  scale_x_continuous(limits = c(1900, 1980)) +
+  geom_density(fill = "gray") +
+  theme_classic() +
+  labs(title = "Sale Years of Paintings sold in GBP",
+       subtitle = "Density plot of years of sale", x = "Year of Sale",
+       y = "")
 ```
 
 ```{r price-histograms, warning=FALSE}
- price_histogram_logged <- knoedler_usd %>%
+ price_histogram_logged_usd <- knoedler_usd %>%
   ggplot(aes(x = price_amount, color = price_amount)) +
   geom_histogram(bins = 50, fill = "darkgreen") +
   scale_x_log10(label = comma) +
@@ -95,7 +127,7 @@ year_density
        y = "# of Sales") +
   theme_classic()
 
- price_histogram_nonlogged <- knoedler_usd %>%
+ price_histogram_nonlogged_usd <- knoedler_usd %>%
   ggplot(aes(x = price_amount, color = price_amount)) +
   geom_histogram(bins = 50, fill = "darkgreen") +
   scale_x_continuous(limits = c(0, 250000),label = comma) +
@@ -103,9 +135,30 @@ year_density
        x = "Price in USD",
        y = "# of Sales") +
   theme_classic()
-price_histogram_logged
-price_histogram_nonlogged
-  
+ 
+price_histogram_logged_usd
+price_histogram_nonlogged_usd
+
+ price_histogram_logged_pounds <- knoedler_pounds %>%
+  ggplot(aes(x = price_amount, color = price_amount)) +
+  geom_histogram(bins = 50, fill = "darkgreen") +
+  scale_x_log10(label = comma) +
+  labs(title = "Knoedler Painting Sale Prices",
+       x = "Price in GBP",
+       y = "# of Sales") +
+  theme_classic()
+
+ price_histogram_nonlogged_pounds <- knoedler_pounds %>%
+  ggplot(aes(x = price_amount, color = price_amount)) +
+  geom_histogram(bins = 50, fill = "darkgreen") +
+  scale_x_continuous(limits = c(0, 250000),label = comma) +
+  labs(title = "Knoedler Painting Sale Prices",
+       x = "Price in GBP",
+       y = "# of Sales") +
+  theme_classic()
+ 
+price_histogram_logged_pounds
+price_histogram_nonlogged_pounds
 ```
 
 
@@ -113,7 +166,7 @@ price_histogram_nonlogged
 
 
 ```{r plots2, warning=FALSE}
-dims_scatterplot <- knoedler_dimensions_usd %>%
+golden_ratio_scatter_usd <- knoedler_dimensions_usd %>%
 ggplot() +
   theme_classic() +
   geom_point(aes(x = dim1, y = dim2, size = price_amount, color = price_amount), alpha = .5) +
@@ -131,7 +184,26 @@ ggplot() +
        size = "Price in Dollars",
        caption = "The Golden Ratio is denoted by the dotted lines")
 
-subject_size_boxplots <- knoedler_dimensions_usd %>%
+golden_ratio_scatter_pounds <- knoedler_dimensions_pounds %>%
+ggplot() +
+  theme_classic() +
+  geom_point(aes(x = dim1, y = dim2, size = price_amount, color = price_amount), alpha = .5) +
+  scale_color_viridis_c(direction = -1, labels = c("$50,000","$100,000","$200,000","$400,000","$600,000"), breaks = c(50000, 100000, 200000, 400000, 600000), begin = 0, end = 1) +
+  scale_size_continuous(labels = c("$50,000", "$100,000","$200,000","$400,000","$600,000"), breaks = c(50000 ,100000, 200000, 400000, 600000)) +
+  geom_abline(slope = 1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
+  geom_abline(slope = 1/1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
+  coord_cartesian(xlim = c(0, 175),
+                  ylim = c(0, 175)) +
+  guides(color = guide_legend(), size = guide_legend()) +
+  labs(title = "Painting Dimensions and Sale Price",
+       x = "Length in Inches",
+       y = "Width in Inches",
+       color = "Price in GBP",
+       size = "Price in GBP",
+       caption = "The Golden Ratio is denoted by the dotted lines")
+
+
+subject_size_boxplots <- knoedler_dimensions_combined %>%
   filter(!is.na(subject)) %>%
 ggplot() +
   geom_boxplot(aes(x = inches_squared, y = fct_reorder(subject, inches_squared, .fun = median), color = subject)) +
@@ -144,7 +216,7 @@ ggplot() +
   scale_color_discrete_qualitative() +
   theme(legend.position = "none")
 
-subject_price_bars<- knoedler_usd %>%
+subject_price_bars_usd <- knoedler_usd %>%
   filter(!is.na(subject), !is.na(price_amount)) %>%
   group_by(subject) %>%
   summarise(mean_price = mean(price_amount)) %>%
@@ -158,9 +230,25 @@ subject_price_bars<- knoedler_usd %>%
        x = "Mean Painting Price in USD",
        y = "Subject")
 
-dims_scatterplot
+subject_price_bars_pounds <- knoedler_pounds %>%
+  filter(!is.na(subject), !is.na(price_amount)) %>%
+  group_by(subject) %>%
+  summarise(mean_price = mean(price_amount)) %>%
+  ggplot(aes(y = fct_reorder(subject, mean_price), x = mean_price, fill = subject)) +
+  theme_classic() +
+  geom_col() +
+  scale_x_sqrt(label = comma) +
+  scale_fill_discrete_qualitative() +
+  theme(legend.position = "none") +
+  labs(title = "Mean Painting Sales Price by Subject", 
+       x = "Mean Painting Price in GBP",
+       y = "Subject")
+
+golden_ratio_scatter_usd
+golden_ratio_scatter_pounds
 subject_size_boxplots
-subject_price_bars
+subject_price_bars_usd
+subject_price_bars_pounds
 ```
 
 
@@ -246,8 +334,8 @@ summary(basic_lm)
 
 
 ```{r savingfunctions, eval=FALSE}
-png(filename = "plots/years_and_average_prices.png")
-years_and_average_prices
+png(filename = "plots/years_average_prices_usd.png")
+years_average_prices_usd
 dev.off()
 
 png(filename = "plots/year_density.png")
@@ -285,9 +373,5 @@ dev.off()
 
 ```
 
-```{r}
-knoedler %>%
-  count(price_currency)
-```
 
 
