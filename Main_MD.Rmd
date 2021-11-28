@@ -6,6 +6,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
+library(broom)
 library(colorspace)
 library(priceR)
 library(scales)
@@ -244,6 +245,8 @@ subject_price_bars_pounds <- knoedler_pounds %>%
        x = "Mean Painting Price in GBP",
        y = "Subject")
 
+
+
 golden_ratio_scatter_usd
 golden_ratio_scatter_pounds
 subject_size_boxplots
@@ -327,10 +330,31 @@ sqin_density
 
 
 ```{r linear-modeling}
+knoedler_dimensions_usd <- knoedler_dimensions_usd %>%
+  mutate(nationality_1 = fct_relevel(nationality_1, "American"))
 basic_lm <- lm(price_amount ~ nationality_1 + sale_date_year + subject + genre + inches_squared,
              data = knoedler_dimensions_usd)
 summary(basic_lm)
+arrange(head(tidy(basic_lm), 23), p.value)
+glance(basic_lm)
+price_per_lm <- lm(price_per_sqin ~ nationality_1 + sale_date_year + subject + genre,
+                   data = knoedler_dimensions_usd)
+tidy(price_per_lm)
+glance(price_per_lm)
 ```
+
+For the regression analysis of our data, we've begun with two primary models that reflect our research goals. Presently, we are using linear models - as our understanding of the data improves, we will use more appropriate types of GLMs that better reflect the non-linearity in the relationships between some of our variables. 
+
+The first model aims to predict the inflation-adjusted price of a painting by its primary physical attributes -
+country of origin, the subject & genre of the piece, and its size in square inches. As we expected, the predictive value of
+solely visual characteristics and sizes is quite limited -  the R squared value of this model is .425, a value which indicates that approximately 42.5% of the variation in real prices is explained by linear relationships with our predictor variables. Although low for modelling purposes, 42.5% is quite high for a model that does not discriminate based on artist name. We expected all but the most famous paintings to have massively random pricing schemes, but the 42.5% figure suggests that general painting sales are less random than we might expect. 
+
+Interpreting the model's coefficients begins with the nationality variable - the baseline dummy variable is "American" and thus each coefficient represents the difference between average paintings in a nationality and average American paintings. Unsurprisingly, the Dutch, Flemish, Bohemian, Greek & Spanish, Italian, and Russian coefficients are flagged as significant to at least the 1% level. All of these nationalities have positive coefficients and thus are more valuable on average than American works. However, "Unknown" nationality does not appear to be significant - one would expect that an unknown nationality would systematically lower its price, but the decrease observed in our data seems to be random noise.
+
+`sale_date_year` is both statistically significant and has a positive coefficient of $2261 - a figure which suggests that each additional year leads to an average rise of $2261 in inflation-adjusted dollars. This figure is unsurprising - 
+
+The second model more directly
+addresses our variable of interest - price per square inch - and its relationship with the prior variables excluding raw size. 
 
 
 ```{r savingfunctions, eval=FALSE}
@@ -373,5 +397,24 @@ dev.off()
 
 ```
 
+```{r hypothesis-testing}
+golden_all <- knoedler_dimensions_usd %>%
+  mutate(ratio1 = dim1/dim2,
+         ratio2 = dim2/dim1,
+         bigratio = if_else(ratio1 >= ratio2, ratio1, ratio2),
+         difference = abs(1.618 - bigratio)) %>%
+  select(difference, price_amount) %>%
+  filter(!is.na(difference), !is.na(price_amount))
+golden_paintings <- golden_all %>%
+  filter(difference <= .16) %>%
+  select(price_amount)
+nongolden_paintings <- golden_all %>%
+  filter(difference > .16) %>%
+  select(price_amount)
+
+golden_means <- sample(golden_paintings$price_amount, size = c(10000, 1000), replace = TRUE)
+nongolden_means <- sample(golden_paintings$price_amount, size = c(10000, 1000), replace = TRUE)
+mean(golden_means>nongolden_means)
+```
 
 
