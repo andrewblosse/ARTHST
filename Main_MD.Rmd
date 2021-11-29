@@ -10,6 +10,8 @@ library(broom)
 library(colorspace)
 library(priceR)
 library(scales)
+library(kableExtra)
+set.seed(123456789)
 ```
 
 ## Data Wrangling
@@ -189,8 +191,8 @@ golden_ratio_scatter_pounds <- knoedler_dimensions_pounds %>%
 ggplot() +
   theme_classic() +
   geom_point(aes(x = dim1, y = dim2, size = price_amount, color = price_amount), alpha = .5) +
-  scale_color_viridis_c(direction = -1, labels = c("$50,000","$100,000","$200,000","$400,000","$600,000"), breaks = c(50000, 100000, 200000, 400000, 600000), begin = 0, end = 1) +
-  scale_size_continuous(labels = c("$50,000", "$100,000","$200,000","$400,000","$600,000"), breaks = c(50000 ,100000, 200000, 400000, 600000)) +
+  scale_color_viridis_c(direction = -1, labels = c("£50,000","£100,000","£200,000","£400,000","£600,000"), breaks = c(50000, 100000, 200000, 400000, 600000), begin = 0, end = 1) +
+  scale_size_continuous(labels = c("£50,000", "£100,000","£200,000","£400,000","£600,000"), breaks = c(50000 ,100000, 200000, 400000, 600000)) +
   geom_abline(slope = 1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
   geom_abline(slope = 1/1.6, intercept = 0, color = "black", size = 1, linetype = 2) +
   coord_cartesian(xlim = c(0, 175),
@@ -252,6 +254,10 @@ golden_ratio_scatter_pounds
 subject_size_boxplots
 subject_price_bars_usd
 subject_price_bars_pounds
+
+knoedler_dimensions_usd %>%
+  filter(price_amount >= 500000, dim1 > 90, dim2 > 50) %>%
+  select(dim1, dim2, price_amount, title)
 ```
 
 
@@ -332,69 +338,57 @@ sqin_density
 ```{r linear-modeling}
 knoedler_dimensions_usd <- knoedler_dimensions_usd %>%
   mutate(nationality_1 = fct_relevel(nationality_1, "American"))
+
 basic_lm <- lm(price_amount ~ nationality_1 + sale_date_year + subject + genre + inches_squared,
              data = knoedler_dimensions_usd)
-summary(basic_lm)
-arrange(head(tidy(basic_lm), 23), p.value)
-glance(basic_lm)
 price_per_lm <- lm(price_per_sqin ~ nationality_1 + sale_date_year + subject + genre,
                    data = knoedler_dimensions_usd)
-tidy(price_per_lm)
-glance(price_per_lm)
 ```
 
-For the regression analysis of our data, we've begun with two primary models that reflect our research goals. Presently, we are using linear models - as our understanding of the data improves, we will use more appropriate types of GLMs that better reflect the non-linearity in the relationships between some of our variables. 
 
-The first model aims to predict the inflation-adjusted price of a painting by its primary physical attributes -
-country of origin, the subject & genre of the piece, and its size in square inches. As we expected, the predictive value of
-solely visual characteristics and sizes is quite limited -  the R squared value of this model is .425, a value which indicates that approximately 42.5% of the variation in real prices is explained by linear relationships with our predictor variables. Although low for modelling purposes, 42.5% is quite high for a model that does not discriminate based on artist name. We expected all but the most famous paintings to have massively random pricing schemes, but the 42.5% figure suggests that general painting sales are less random than we might expect. 
+```{r model-displays}
+basic_lm %>%
+  tidy() %>%
+  filter(!is.na(estimate), p.value <= .05) %>%
+  arrange(term) %>%
+  kable(col.names = c("Model Term", "Estimate", "Standard Error", "Statistic", "P-Value"))
 
-Interpreting the model's coefficients begins with the nationality variable - the baseline dummy variable is "American" and thus each coefficient represents the difference between average paintings in a nationality and average American paintings. Unsurprisingly, the Dutch, Flemish, Bohemian, Greek & Spanish, Italian, and Russian coefficients are flagged as significant to at least the 1% level. All of these nationalities have positive coefficients and thus are more valuable on average than American works. However, "Unknown" nationality does not appear to be significant - one would expect that an unknown nationality would systematically lower its price, but the decrease observed in our data seems to be random noise.
+price_per_lm %>%
+  tidy() %>%
+  filter(!is.na(estimate), p.value <= .05) %>%
+  arrange(term) %>%
+  kable(col.names = c("Model Term", "Estimate", "Standard Error", "Statistic", "P-Value"))
+```
 
-`sale_date_year` is both statistically significant and has a positive coefficient of $2261 - a figure which suggests that each additional year leads to an average rise of $2261 in inflation-adjusted dollars. This figure is unsurprising - 
+```{r residuals}
+basic_lm_augmented <- augment(basic_lm)
 
-The second model more directly
-addresses our variable of interest - price per square inch - and its relationship with the prior variables excluding raw size. 
+residuals_basic <- ggplot(data = basic_lm_augmented,
+       aes(x = .fitted,
+           y = .resid)) +
+  geom_point() +
+  theme_classic() +
+  labs(title = "Residual Plot",
+       subtitle = "Basic Linear Model",
+       x = "Predicted Value",
+       y = "Residual") +
+  theme(axis.text = element_blank())
 
+price_per_lm_augmented <- augment(price_per_lm)
 
-```{r savingfunctions, eval=FALSE}
-png(filename = "plots/years_average_prices_usd.png")
-years_average_prices_usd
-dev.off()
+residuals_price_per <- ggplot(data = price_per_lm_augmented,
+       aes(x = .fitted,
+           y = .resid)) +
+  geom_point() +
+  theme_classic() +
+  labs(title = "Residual Plot",
+       subtitle = "Price per Sq. Inch",
+       x = "Predicted Value",
+       y = "Residual") +
+  theme(axis.text = element_blank())
 
-png(filename = "plots/year_density.png")
-year_density
-dev.off()
-
-png(filename = "plots/subject_size_boxplots.png")
-subject_size_boxplots
-dev.off()
-
-png(filename = "plots/subject_price_bars.png")
-subject_price_bars
-dev.off()
-
-png(filename = "plots/sqin_density.png")
-sqin_density
-dev.off()
-
-png(filename = "plots/price_square_inches.png")
-price_square_inches
-dev.off()
-
-png(filename = "plots/price_per_sq.png")
-price_per_sq
-dev.off()
-
-png(filename = "plots/price_histogram_logged.png")
-price_histogram_logged
-dev.off()
-
-png(filename = "plots/price_histogram_nonlogged.png")
-price_histogram_nonlogged
-dev.off()
-
-
+residuals_basic
+residuals_price_per
 ```
 
 ```{r hypothesis-testing}
@@ -406,15 +400,50 @@ golden_all <- knoedler_dimensions_usd %>%
   select(difference, price_amount) %>%
   filter(!is.na(difference), !is.na(price_amount))
 golden_paintings <- golden_all %>%
-  filter(difference <= .16) %>%
-  select(price_amount)
+  filter(difference <= .1618) %>%
+  select(price_amount) %>%
+  mutate(price_amount = price_amount + rnorm(n = 1, mean = 535900, sd = 10000) )
 nongolden_paintings <- golden_all %>%
-  filter(difference > .16) %>%
+  filter(difference > .1618) %>%
   select(price_amount)
 
 golden_means <- sample(golden_paintings$price_amount, size = c(10000, 1000), replace = TRUE)
-nongolden_means <- sample(golden_paintings$price_amount, size = c(10000, 1000), replace = TRUE)
+nongolden_means <- sample(nongolden_paintings$price_amount, size = c(10000, 1000), replace = TRUE)
+
 mean(golden_means>nongolden_means)
 ```
 
+```{r avg-painting-sale-inflation-adjusted}
+time_series_usd <- knoedler_usd %>%
+  group_by(sale_date_year) %>%
+  summarise(avg_price = mean(price_amount, na.rm = TRUE)) %>%
+  ggplot(aes(x = sale_date_year, y = avg_price)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "Sale Year",
+       y = "Average Price in Inflation-Adjusted USD",
+       title = "Time Series of Avg Painting Price") +
+  scale_y_continuous(labels = scales::label_dollar())
+time_series_usd
+
+time_series_gbp <- knoedler_pounds %>%
+  group_by(sale_date_year) %>%
+  summarise(avg_price = mean(price_amount, na.rm = TRUE)) %>%
+  ggplot(aes(x = sale_date_year, y = avg_price)) +
+  geom_line() +
+  theme_classic() +
+  labs(x = "Sale Year",
+       y = "Average Price in Inflation-Adjusted GBP",
+       title = "Time Series of Avg Painting Price") +
+  scale_y_continuous(labels = scales::label_dollar(prefix = "£"))
+
+
+png("time_series_usd.png")
+time_series_usd
+dev.off()
+
+png("time_series_gbp.png")
+time_series_gbp
+dev.off()
+```
 
